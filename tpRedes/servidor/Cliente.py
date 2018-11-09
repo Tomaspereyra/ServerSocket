@@ -29,12 +29,18 @@ class Cliente:
                 self.socketCliente.send(str(entrada))
                 respuesta = self.socketCliente.recv(1024)
                 respuestas = respuesta.split("/")
-
+                print "Respuesta : " + respuesta
                 mapa = respuestas[0]
                 status = int(respuestas[2])
                 msg = respuestas[3]
+                oro = respuestas[4]
+                if respuestas[5] == "True":
+                    tieneLlave = "SI"
+                else:
+                    tieneLlave = "NO"
 
                 print mapa
+                print "ORO : " + oro + " - Llave : " + tieneLlave
                 print msg
 
                 if status != CONTINUE:
