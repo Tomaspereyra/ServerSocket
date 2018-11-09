@@ -17,21 +17,21 @@ class server:
 class Handler(SocketServer.BaseRequestHandler):
 
     def handle(self):
-        map = "3114\n0110\n0110\n0000"
+        map = "3114\n0110\n0110\n0060"
         self.datos = self.request.recv(1024).strip()
         self.login(self.datos)
         self.request.send(self.login(self.datos))
 
-        exit = ""
         maze = Maze()
         maze.fromString(map)
         self.request.send(maze.toString())
         hero = maze.hero
-
-        while exit != 'e':
+        mov = ''
+        while mov != 'e':
             mov = self.request.recv(1024).strip()
-            self.juego(mov, hero)
-            self.request.send(maze.toString())
+            if (mov != 'e'):
+                result = self.juego(mov, hero)
+                self.request.send(maze.toString() + "/" + result.serialize())
 
     def login(self, msj):
 
@@ -51,13 +51,13 @@ class Handler(SocketServer.BaseRequestHandler):
 
 
         if movimiento == 'd':
-            hero.moveRight()
+            return hero.moveRight()
         if movimiento == 'a':
-            hero.moveLeft()
+            return hero.moveLeft()
         if movimiento == 's':
-            hero.moveDown()
+            return hero.moveDown()
         if movimiento == 'w':
-            hero.moveUp()
+            return hero.moveUp()
 
     def test(self):
         map = "3114\n0110\n0110\n0000"
