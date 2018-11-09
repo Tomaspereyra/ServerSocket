@@ -1,26 +1,34 @@
 
-import SocketServer
-
+import SocketServer,socket
+import threading
 from datos.Maze import *
 
+TIMEOUT = 10
 
 class server:
 
       def __init__(self):
 
-          httpd = SocketServer.TCPServer(("localhost", 8000), Handler)
+          server = ThreadedTCPServer(("localhost", 8000), Handler)
 
           print "Server en el puerto", 8000
-          httpd.serve_forever()
+          server.serve_forever()
 
 
 class Handler(SocketServer.BaseRequestHandler):
 
     def handle(self):
+
+        threadName = threading.currentThread().getName()
+        activeThreads = threading.activeCount() - 1
+        clientIP = self.client_address[0]
+        print '[%s] -- New connection from %s -- Active threads: %d' % (threadName, clientIP, activeThreads)
+        data = self.request.recv(1024)
+        print '[%s] -- %s -- Received: %s' % (threadName, clientIP, data)
+
         map = "3114\n0110\n0110\n0060"
-        self.datos = self.request.recv(1024).strip()
-        self.login(self.datos)
-        self.request.send(self.login(self.datos))
+
+        self.request.send(self.login(data)) #implementar login aca
 
         maze = Maze()
         maze.fromString(map)
@@ -42,7 +50,7 @@ class Handler(SocketServer.BaseRequestHandler):
 
                 usuario = msj[inicioDePalabra:i+1]
                 inicioDePalabra = i+1
-                print usuario
+
         return "Bienvenido"
 
 
@@ -59,30 +67,12 @@ class Handler(SocketServer.BaseRequestHandler):
         if movimiento == 'w':
             return hero.moveUp()
 
-    def test(self):
-        map = "3114\n0110\n0110\n0000"
-        print("main()...")
-        maze = Maze()
-        maze.fromString(map)
-        hero = maze.hero
-        print(maze.toString())
 
-        print (str(hero.moveDown()))
+class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind(self.server_address)
 
-        print(maze.toString())
-
-        print(str(hero.moveDown()))
-
-        print(maze.toString())
-        print(str(hero.moveRight()))
-
-        print(maze.toString())
-        print(str(hero.moveDown()))
-
-        print(maze.toString())
-        print(str(hero.moveRight()))
-
-        print(maze.toString())
 
 
 
