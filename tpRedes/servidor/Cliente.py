@@ -18,6 +18,7 @@ class Cliente:
         self.socketCliente.send(login)
         respuesta = self.socketCliente.recv(1024)
         print respuesta
+        os.system('cls')
         print self.socketCliente.recv(1024)
         entrada = ''
         while entrada !='e':

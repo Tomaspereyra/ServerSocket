@@ -5,6 +5,8 @@ from datos.Maze import *
 
 TIMEOUT = 10
 
+testMap = "2005551111111111\n0111111115000005\n0111111111110111\n0142000111110111\n0111110111110115\n0111110111110110\n0130000111110000\n0111110111110111\n0000000111110111\n0111110111110111\n0100000000025555\n0111111111112111\n0000000111112111\n1111000111112111\n1111005111112111\n1111111111112226"
+
 class server:
 
       def __init__(self):
@@ -26,8 +28,8 @@ class Handler(SocketServer.BaseRequestHandler):
         data = self.request.recv(1024)
         print '[%s] -- %s -- Received: %s' % (threadName, clientIP, data)
 
-        map = "3114\n0110\n0110\n0060"
-
+        #map = "3114\n0110\n0110\n0060"
+        map = testMap
         self.request.send(self.login(data)) #implementar login aca
 
         maze = Maze()

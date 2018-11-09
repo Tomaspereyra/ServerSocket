@@ -24,8 +24,8 @@ from datos.Hero import Hero
 
 class Maze :
 
-    WIDTH = 4
-    HEIGHT = 4
+    WIDTH = 16
+    HEIGHT = 16
 
 
 
