@@ -6,7 +6,6 @@ from datos.Hero import MoveResult
 from dao.UsuarioDao import UsuarioDao
 
 TIMEOUT = 10
-
 testMap = "2005551111111111\n0111111115000005\n0111111111110111\n0142000111110111\n0111110111110115\n0111110111110110\n0130000111110000\n0111110111110111\n0000000111110111\n0111110111110111\n0100000000025555\n0111111111112111\n0000000111112111\n1111000111112111\n1111005111112111\n1111111111112226"
 
 class server:
@@ -18,13 +17,16 @@ class server:
           print "Server en el puerto", 8000
           server.serve_forever()
 
+
+
 NORMAL = 0
 CONSOLA = 1
+
 class Handler(SocketServer.BaseRequestHandler):
 
     def parsearMensajeLog(self, data):
         splitData = data.split("|")
-        return splitData[0], splitData[1], splitData[2], splitData[3]
+        return splitData[0], splitData[1], splitData[2], int(splitData[3])
 
     def handle(self):
 
@@ -38,23 +40,29 @@ class Handler(SocketServer.BaseRequestHandler):
         #Armar While hasta que loguee con exito. Una vez hecho
         #yo obtengo el Tipo y decido a que juego va
         log = False
-        tipo = 0
-        while log == False:
-            comando, cuenta, password, tipo = self.parsearMensajeLog(data)
-            if comando == "LOG":
-                log = self.login(cuenta, password)
-            if (tipo < 0) or (tipo > 1):      #este if me volvio loco
-                print "tipo incorrecto: ", tipo
-               # log = False           #si sacas este comentario en log, no pasa nunca, aunque tipo este bien
-            if log == False:
+        tipo = -1
+        while not log:
+            try:
+                log = True
+                print ("Data : " + data)
+                comando, cuenta, password, tipo = self.parsearMensajeLog(data)
+                #print ("Tipo : " + str(tipo))
+                if comando == "LOG":
+                    log = self.login(cuenta, password)
+                if tipo < 0 or tipo > 1:      #este if me volvio loco
+                    print "tipo incorrecto: ", tipo
+                    log = False           #si sacas este comentario en log, no pasa nunca, aunque tipo este bien
+                if log == False:
+                    self.request.send("LOG|ERROR")
+                    data = self.request.recv(1024)
+            except Exception as e:
                 self.request.send("LOG|ERROR")
+                print ("error : " + e.message)
                 data = self.request.recv(1024)
+
         self.request.send("LOG|OK")
-            #Volver al loop, tipo incorrecto. Evalua esto junto a la pw y eso como
-            #otra condicion de que este todo mal.
 
         map = testMap
-
 
         maze = Maze()
         maze.fromString(map)
@@ -65,6 +73,8 @@ class Handler(SocketServer.BaseRequestHandler):
             self.enterNormalGameMode(maze, hero)
         elif tipo == CONSOLA:
             self.enterConsoleGameMode(maze, hero)
+        else:
+            print ("Tipo recibido erroneo : " + str(tipo))
 
     def login(self, cuenta, password):
 
@@ -77,6 +87,7 @@ class Handler(SocketServer.BaseRequestHandler):
             return False
 
     def enterConsoleGameMode(self, maze, hero):
+        print ("Iniciado modo de juego : CONSOLA")
         mov = ''
         terminado = False
         while not terminado:
@@ -85,15 +96,17 @@ class Handler(SocketServer.BaseRequestHandler):
                 if not terminado:
                     result = self.procesarMovimientoConsola(mov, hero)
                     if result:
-                        terminado = result.status != 0
+                        terminado = result.getStatus() != 0
                         self.enviarMensajeJuegoConsola(maze.toString() + "/" + result.serialize())
                     else:
+                        print ("Error (Result = false) " + mov)
                         self.enviarMensajeErrorConsola(mov, hero, maze)
-            except:
-                print ("Error : " + mov)
+            except Exception as e:
+                print ("Error (Exception) : " + mov + " - " + e.message)
                 self.enviarMensajeErrorConsola(mov, hero, maze)
 
     def enterNormalGameMode(self, maze, hero):
+        print ("Iniciado modo de juego : NORMAL")
         mov = ''
         while mov != 'e':
             try:
@@ -104,8 +117,8 @@ class Handler(SocketServer.BaseRequestHandler):
                         self.request.send(maze.toString() + "/" + result.serialize())
                     else:
                         self.enviarMensajeErrorNormal(mov, hero, maze)
-            except:
-                print ("Error : " + mov)
+            except Exception as e:
+                print ("Error (Exception) : " + mov + " - " + e.message)
                 self.enviarMensajeErrorNormal(mov, hero, maze)
 
     def enviarMensajeErrorNormal (self, mov, hero, maze):
@@ -121,16 +134,24 @@ class Handler(SocketServer.BaseRequestHandler):
         return MoveResult(False, "ERROR en la solicitud de mensaje : '" + msg.replace("|", "I") + "'", hero)
 
 
-
     def esMensajeConsola(self, movimiento):
         return movimiento.find("|") != -1
 
     def parsearMensajeConsola(self, mensaje):
-        if (len(mensaje) > 1):
-            msgSplit = mensaje.split("|")
-            comando = msgSplit[0]
-            datos = msgSplit[1]
-        else:
+        try:
+            print("mensaje recibido : " + mensaje)
+            if (len(mensaje) > 1):
+                msgSplit = mensaje.split("|")
+                if len(msgSplit) == 1:
+                    comando = msgSplit[0]
+                    datos = ""
+                else:
+                    comando = msgSplit[0]
+                    datos = msgSplit[1]
+            else:
+                comando = ""
+                datos = ""
+        except:
             comando = ""
             datos = ""
         return comando, datos
@@ -160,7 +181,9 @@ class Handler(SocketServer.BaseRequestHandler):
         comando, datos = self.parsearMensajeConsola(movimiento)
         print ("Comando : " + comando)
         print ("Datos : " + datos)
-        if comando == "MOVE":
+        if comando == "SALIR":
+            return self.makeExitResult(hero)
+        elif comando == "MOVE":
             if datos == 'RIGHT':
                 return hero.moveRight()
             if datos == 'LEFT':
@@ -173,7 +196,9 @@ class Handler(SocketServer.BaseRequestHandler):
             #Comando invalido
             return None
 
-
+    def makeExitResult(self, hero):
+        hero.alive = False
+        return MoveResult(True, "Saliste del Juego", hero)
 
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     def server_bind(self):

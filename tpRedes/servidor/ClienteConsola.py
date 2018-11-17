@@ -61,22 +61,25 @@ class Cliente:
                 self.socketCliente.send(str(entrada))
                 respuesta = self.socketCliente.recv(1024)
                 #print "Respuesta : " + respuesta
-                comando, msg = self.parsearMensajeConsola(respuesta)
-                respuestas = msg.split("/")
+                try:
+                    comando, msg = self.parsearMensajeConsola(respuesta)
+                    respuestas = msg.split("/")
 
-                mapa = respuestas[0]
-                status = int(respuestas[2])
-                msg = respuestas[3]
-                oro = respuestas[4]
-                if respuestas[5] == "True":
-                    tieneLlave = "SI"
-                else:
-                    tieneLlave = "NO"
+                    mapa = respuestas[0]
+                    status = int(respuestas[2])
+                    msg = respuestas[3]
+                    oro = respuestas[4]
+                    if respuestas[5] == "True":
+                        tieneLlave = "SI"
+                    else:
+                        tieneLlave = "NO"
 
-                self.imprimirMapa (mapa)
-                print "ORO : " + oro + " - Llave : " + tieneLlave
-                print msg
-
+                    self.imprimirMapa (mapa)
+                    print "ORO : " + oro + " - Llave : " + tieneLlave
+                    print msg
+                except:
+                    print("Ocurrio un error")
+                    status = CONTINUE
                 if status != CONTINUE:
                     terminado = True
                     if status ==  WON:
@@ -89,11 +92,16 @@ class Cliente:
         self.socketCliente.close()
 
     def parsearMensajeConsola(self, mensaje):
-        if len(mensaje) > 1:
-            msgSplit = mensaje.split("|")
-            comando = msgSplit[0]
-            datos = msgSplit[1]
-        else:
+        #print("mensaje recibido : " + mensaje)
+        try:
+            if len(mensaje) > 1:
+                msgSplit = mensaje.split("|")
+                comando = msgSplit[0]
+                datos = msgSplit[1]
+            else:
+                comando = ""
+                datos = ""
+        except:
             comando = ""
             datos = ""
         return comando, datos

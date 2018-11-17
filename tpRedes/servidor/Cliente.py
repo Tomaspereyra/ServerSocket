@@ -41,8 +41,9 @@ class Cliente:
     def enviarDatos(self):
         log = False
         while log == False:
-            login = raw_input("Ingrese usuario y contrasena:")
-            self.socketCliente.send(login)
+            user = raw_input("Ingrese usuario: ")
+            pw = raw_input("Ingrese password : ")
+            self.socketCliente.send("LOGIN|" + user + "|" + pw + "|0")
             respuesta = self.socketCliente.recv(1024)
             print respuesta
             if respuesta == "LOG|OK":
@@ -50,31 +51,36 @@ class Cliente:
 
 
 
-        respuesta = self.socketCliente.recv(1024)
-        self.imprimirMapa(respuesta)
+        #respuesta = self.socketCliente.recv(1024)
+        #self.imprimirMapa(respuesta)
         os.system('cls')
         self.imprimirMapa(self.socketCliente.recv(1024))
         entrada = ''
+        sys.stdin.flush();
         while entrada !='e':
             entrada = getch()
             if entrada != 'e':
                 os.system('cls')
                 self.socketCliente.send(str(entrada))
                 respuesta = self.socketCliente.recv(1024)
-                respuestas = respuesta.split("/")
-                #print "Respuesta : " + respuesta
-                mapa = respuestas[0]
-                status = int(respuestas[2])
-                msg = respuestas[3]
-                oro = respuestas[4]
-                if respuestas[5] == "True":
-                    tieneLlave = "SI"
-                else:
-                    tieneLlave = "NO"
+                try:
+                    respuestas = respuesta.split("/")
+                    #print "Respuesta : " + respuesta
+                    mapa = respuestas[0]
+                    status = int(respuestas[2])
+                    msg = respuestas[3]
+                    oro = respuestas[4]
+                    if respuestas[5] == "True":
+                        tieneLlave = "SI"
+                    else:
+                        tieneLlave = "NO"
 
-                self.imprimirMapa (mapa)
-                print "ORO : " + oro + " - Llave : " + tieneLlave
-                print msg
+                    self.imprimirMapa (mapa)
+                    print "ORO : " + oro + " - Llave : " + tieneLlave
+                    print msg
+                except:
+                    print ("Ocurrio un error")
+                    status = CONTINUE
 
                 if status != CONTINUE:
                     entrada = 'e'
