@@ -14,6 +14,7 @@ CONTINUE = 0
 LOST = 1
 WON = 2
 
+
 class MoveResult:
     def __init__(self, success, msg, hero):
         self.success = success

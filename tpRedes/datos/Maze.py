@@ -49,7 +49,7 @@ class Maze :
         rows = mapString.splitlines()
 
         for row in range(self.WIDTH):
-            print("Read row : " + rows[row])
+            #print("Read row : " + rows[row])
             for col in range(self.HEIGHT):
                 self.tiles[col][row] = int(rows[row][col])
                 if self.tiles[col][row] == HERO:

@@ -46,14 +46,18 @@ class Cliente:
         os.system('cls')
         print self.socketCliente.recv(1024)
         entrada = ''
-        while entrada !='e':
-            entrada = getch()
-            if entrada != 'e':
+        terminado = False
+        while not terminado:
+            print ("Ingrese el mensaje : ")
+            entrada = raw_input()
+            if not terminado:
                 os.system('cls')
                 self.socketCliente.send(str(entrada))
                 respuesta = self.socketCliente.recv(1024)
-                respuestas = respuesta.split("/")
-                #print "Respuesta : " + respuesta
+                print "Respuesta : " + respuesta
+                comando, msg = self.parsearMensajeConsola(respuesta)
+                respuestas = msg.split("/")
+
                 mapa = respuestas[0]
                 status = int(respuestas[2])
                 msg = respuestas[3]
@@ -68,7 +72,7 @@ class Cliente:
                 print msg
 
                 if status != CONTINUE:
-                    entrada = 'e'
+                    terminado = True
                     if status ==  WON:
                         print "Ganaste el juego!"
                     elif status == LOST:
@@ -78,6 +82,15 @@ class Cliente:
 
         self.socketCliente.close()
 
+    def parsearMensajeConsola(self, mensaje):
+        if len(mensaje) > 1:
+            msgSplit = mensaje.split("|")
+            comando = msgSplit[0]
+            datos = msgSplit[1]
+        else:
+            comando = ""
+            datos = ""
+        return comando, datos
 
     def imprimirMapa(self, mapa):
         sys.stdout.flush()
