@@ -39,9 +39,15 @@ class Cliente:
         self.socketCliente.connect((host, port))
 
     def enviarDatos(self):
-        login = raw_input("Ingrese usuario y contrasena:")
-        self.socketCliente.send(login)
-        respuesta = self.socketCliente.recv(1024)
+        log = False
+        while log == False:
+            login = raw_input("Ingrese usuario y contrasena:")
+            self.socketCliente.send(login)
+            respuesta = self.socketCliente.recv(1024)
+            print respuesta
+            if respuesta == "LOG|OK":
+                log = True
+
         #self.imprimirMapa(respuesta)
         os.system('cls')
         self.imprimirMapa(self.socketCliente.recv(1024))

@@ -3,6 +3,7 @@ import SocketServer,socket
 import threading
 from datos.Maze import *
 from datos.Hero import MoveResult
+from dao.UsuarioDao import UsuarioDao
 
 TIMEOUT = 10
 
@@ -36,15 +37,24 @@ class Handler(SocketServer.BaseRequestHandler):
 
         #Armar While hasta que loguee con exito. Una vez hecho
         #yo obtengo el Tipo y decido a que juego va
-        comando, cuenta, password, tipo = self.parsearMensajeLog(data)
-
-        if (tipo < 0 or tipo > 1):
-            return
+        log = False
+        tipo = 0
+        while log == False:
+            comando, cuenta, password, tipo = self.parsearMensajeLog(data)
+            if comando == "LOG":
+                log = self.login(cuenta, password)
+            if (tipo < 0) or (tipo > 1):      #este if me volvio loco
+                print "tipo incorrecto: ", tipo
+               # log = False           #si sacas este comentario en log, no pasa nunca, aunque tipo este bien
+            if log == False:
+                self.request.send("LOG|ERROR")
+                data = self.request.recv(1024)
+        self.request.send("LOG|OK")
             #Volver al loop, tipo incorrecto. Evalua esto junto a la pw y eso como
             #otra condicion de que este todo mal.
 
         map = testMap
-        self.request.send(self.login(data)) #implementar login aca
+
 
         maze = Maze()
         maze.fromString(map)
@@ -56,6 +66,15 @@ class Handler(SocketServer.BaseRequestHandler):
         elif tipo == CONSOLA:
             self.enterConsoleGameMode(maze, hero)
 
+    def login(self, cuenta, password):
+
+        usuario = UsuarioDao()
+        u = usuario.traerUsuario(cuenta)
+
+        if u is not None and u.getContrasena() == password:
+            return True
+        else:
+            return False
 
     def enterConsoleGameMode(self, maze, hero):
         mov = ''
@@ -101,17 +120,7 @@ class Handler(SocketServer.BaseRequestHandler):
     def makeErrorResult(self, msg, hero):
         return MoveResult(False, "ERROR en la solicitud de mensaje : '" + msg.replace("|", "I") + "'", hero)
 
-    def login(self, msj):
 
-        inicioDePalabra = 0
-        for i in range(len(msj)):
-
-            if msj[i] == ' ' or i == len(msj)-1:
-
-                usuario = msj[inicioDePalabra:i+1]
-                inicioDePalabra = i+1
-
-        return "Bienvenido"
 
     def esMensajeConsola(self, movimiento):
         return movimiento.find("|") != -1
