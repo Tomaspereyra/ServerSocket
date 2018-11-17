@@ -1,9 +1,12 @@
 
-import SocketServer,socket
+import SocketServer, socket
 import threading
 from datos.Maze import *
 from datos.Hero import MoveResult
 from dao.UsuarioDao import UsuarioDao
+from Crypto.Cipher import AES
+
+encryption_suite = AES.new('This is a key123', AES.MODE_CBC, 'This is an IV456')
 
 TIMEOUT = 10
 testMap = "2005551111111111\n0111111115000005\n0111111111110111\n0142000111110111\n0111110111110115\n0111110111110110\n0130000111110000\n0111110111110111\n0000000111110111\n0111110111110111\n0100000000025555\n0111111111112111\n0000000111112111\n1111000111112111\n1111005111112111\n1111111111112226"
@@ -24,6 +27,23 @@ CONSOLA = 1
 
 class Handler(SocketServer.BaseRequestHandler):
 
+    def addPadding(self, msg):
+        for i in range (16 - (len(msg) % 16)):
+            msg += "*"
+        return msg
+
+    def removePadding(self, msg):
+        return msg.replace("*", "")
+
+    def enviarMensaje(self, msg):
+        cryptext = encryption_suite.encrypt(self.addPadding(msg))
+        print ("sent text : " + cryptext)
+        self.request.send(cryptext)
+
+    def recibirMensaje(self):
+        msg = self.request.recv(1024)
+        return self.removePadding(encryption_suite.decrypt(msg))
+
     def parsearMensajeLog(self, data):
         splitData = data.split("|")
         return splitData[0], splitData[1], splitData[2], int(splitData[3])
@@ -34,7 +54,7 @@ class Handler(SocketServer.BaseRequestHandler):
         activeThreads = threading.activeCount() - 1
         clientIP = self.client_address[0]
         print '[%s] -- New connection from %s -- Active threads: %d' % (threadName, clientIP, activeThreads)
-        data = self.request.recv(1024)
+        data = self.recibirMensaje()
         print '[%s] -- %s -- Received: %s' % (threadName, clientIP, data)
 
         #Armar While hasta que loguee con exito. Una vez hecho
@@ -50,24 +70,27 @@ class Handler(SocketServer.BaseRequestHandler):
                 #print ("Tipo : " + str(tipo))
                 if comando == "LOGIN":
                     log = self.login(cuenta, password)
+                else:
+                    comando = False
                 if tipo < 0 or tipo > 1:      #este if me volvio loco
                     print "tipo incorrecto: ", tipo
                     log = False           #si sacas este comentario en log, no pasa nunca, aunque tipo este bien
                 if log == False:
-                    self.request.send("LOG|ERROR")
-                    data = self.request.recv(1024)
+                    self.enviarMensaje("LOG|ERROR")
+                    data = self.recibirMensaje()
             except Exception as e:
-                self.request.send("LOG|ERROR")
+                log = False
+                self.enviarMensaje("LOG|ERROR")
                 print ("error : " + e.message)
-                data = self.request.recv(1024)
+                data = self.recibirMensaje()
 
-        self.request.send("LOG|OK")
+        self.enviarMensaje("LOG|OK")
 
         map = testMap
 
         maze = Maze()
         maze.fromString(map)
-        self.request.send(maze.toString())
+        self.enviarMensaje(maze.toString())
         hero = maze.hero
 
         if tipo == NORMAL:
@@ -93,7 +116,7 @@ class Handler(SocketServer.BaseRequestHandler):
         terminado = False
         while not terminado:
             try:
-                mov = self.request.recv(1024).strip()
+                mov = self.recibirMensaje().strip()
                 if not terminado:
                     result = self.procesarMovimientoConsola(mov, hero)
                     if result:
@@ -111,11 +134,11 @@ class Handler(SocketServer.BaseRequestHandler):
         mov = ''
         while mov != 'e':
             try:
-                mov = self.request.recv(1024).strip()
+                mov = self.recibirMensaje().strip()
                 if mov != 'e':
                     result = self.procesarMovimientoTecla(mov, hero)
                     if result:
-                        self.request.send(maze.toString() + "/" + result.serialize())
+                        self.enviarMensaje(maze.toString() + "/" + result.serialize())
                     else:
                         self.enviarMensajeErrorNormal(mov, hero, maze)
             except Exception as e:
@@ -123,13 +146,13 @@ class Handler(SocketServer.BaseRequestHandler):
                 self.enviarMensajeErrorNormal(mov, hero, maze)
 
     def enviarMensajeErrorNormal (self, mov, hero, maze):
-        self.request.send(maze.toString() + "/" + self.makeErrorResult(mov, hero).serialize())
+        self.enviarMensaje(maze.toString() + "/" + self.makeErrorResult(mov, hero).serialize())
 
     def enviarMensajeErrorConsola (self, mov, hero, maze):
         self.enviarMensajeJuegoConsola(maze.toString() + "/" + self.makeErrorResult(mov, hero).serialize())
 
     def enviarMensajeJuegoConsola (self, msg):
-        self.request.send("RESULT|" + msg)
+        self.enviarMensaje("RESULT|" + msg)
 
     def makeErrorResult(self, msg, hero):
         return MoveResult(False, "ERROR en la solicitud de mensaje : '" + msg.replace("|", "I") + "'", hero)

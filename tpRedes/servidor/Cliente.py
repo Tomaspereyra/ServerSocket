@@ -4,6 +4,7 @@ import os
 import sys
 from msvcrt import getch
 import sys
+from Crypto.Cipher import AES
 try:
    import colorama
    colorama.init()
@@ -17,6 +18,7 @@ CONTINUE = 0
 LOST = 1
 WON = 2
 
+encryption_suite = AES.new('This is a key123', AES.MODE_CBC, 'This is an IV456')
 
 class bcolors:
     RED = "\033[91m"
@@ -32,6 +34,21 @@ class bcolors:
 
 class Cliente:
 
+    def addPadding(self, msg):
+        for i in range (16 - (len(msg) % 16)):
+            msg += "*"
+        return msg
+
+    def removePadding(self, msg):
+        return msg.replace("*", "")
+
+    def enviarMensaje(self, msg):
+        cryptext = encryption_suite.encrypt(self.addPadding(msg))
+        self.socketCliente.send(cryptext)
+
+    def recibirMensaje(self):
+        msg = self.socketCliente.recv(1024)
+        return self.removePadding(encryption_suite.decrypt(msg))
 
 
     def __init__(self, host, port):
@@ -43,26 +60,26 @@ class Cliente:
         while log == False:
             user = raw_input("Ingrese usuario: ")
             pw = raw_input("Ingrese password : ")
-            self.socketCliente.send("LOGIN|" + user + "|" + pw + "|0")
-            respuesta = self.socketCliente.recv(1024)
+            self.enviarMensaje("LOGIN|" + user + "|" + pw + "|0")
+            respuesta = self.recibirMensaje()
             print respuesta
             if respuesta == "LOG|OK":
                 log = True
 
 
 
-        #respuesta = self.socketCliente.recv(1024)
+        #respuesta = self.recibirMensaje()
         #self.imprimirMapa(respuesta)
         os.system('cls')
-        self.imprimirMapa(self.socketCliente.recv(1024))
+        self.imprimirMapa(self.recibirMensaje())
         entrada = ''
         sys.stdin.flush();
         while entrada !='e':
             entrada = getch()
             if entrada != 'e':
                 os.system('cls')
-                self.socketCliente.send(str(entrada))
-                respuesta = self.socketCliente.recv(1024)
+                self.enviarMensaje(str(entrada))
+                respuesta = self.recibirMensaje()
                 try:
                     respuestas = respuesta.split("/")
                     #print "Respuesta : " + respuesta
