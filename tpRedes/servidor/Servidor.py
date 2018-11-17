@@ -46,8 +46,9 @@ class Handler(SocketServer.BaseRequestHandler):
                 log = True
                 print ("Data : " + data)
                 comando, cuenta, password, tipo = self.parsearMensajeLog(data)
+                print password
                 #print ("Tipo : " + str(tipo))
-                if comando == "LOG":
+                if comando == "LOGIN":
                     log = self.login(cuenta, password)
                 if tipo < 0 or tipo > 1:      #este if me volvio loco
                     print "tipo incorrecto: ", tipo
