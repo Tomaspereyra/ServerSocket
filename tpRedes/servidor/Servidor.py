@@ -17,8 +17,13 @@ class server:
           print "Server en el puerto", 8000
           server.serve_forever()
 
-
+NORMAL = 0
+CONSOLA = 1
 class Handler(SocketServer.BaseRequestHandler):
+
+    def parsearMensajeLog(self, data):
+        splitData = data.split("|")
+        return splitData[0], splitData[1], splitData[2], splitData[3]
 
     def handle(self):
 
@@ -29,6 +34,15 @@ class Handler(SocketServer.BaseRequestHandler):
         data = self.request.recv(1024)
         print '[%s] -- %s -- Received: %s' % (threadName, clientIP, data)
 
+        #Armar While hasta que loguee con exito. Una vez hecho
+        #yo obtengo el Tipo y decido a que juego va
+        comando, cuenta, password, tipo = self.parsearMensajeLog(data)
+
+        if (tipo < 0 or tipo > 1):
+            return
+            #Volver al loop, tipo incorrecto. Evalua esto junto a la pw y eso como
+            #otra condicion de que este todo mal.
+
         map = testMap
         self.request.send(self.login(data)) #implementar login aca
 
@@ -37,9 +51,11 @@ class Handler(SocketServer.BaseRequestHandler):
         self.request.send(maze.toString())
         hero = maze.hero
 
+        if tipo == NORMAL:
+            self.enterNormalGameMode(maze, hero)
+        elif tipo == CONSOLA:
+            self.enterConsoleGameMode(maze, hero)
 
-        #self.enterNormalGameMode(maze, hero)
-        self.enterConsoleGameMode(maze, hero)
 
     def enterConsoleGameMode(self, maze, hero):
         mov = ''
