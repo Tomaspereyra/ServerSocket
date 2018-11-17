@@ -42,9 +42,9 @@ class Cliente:
         login = raw_input("Ingrese usuario y contrasena:")
         self.socketCliente.send(login)
         respuesta = self.socketCliente.recv(1024)
-        print respuesta
+        #self.imprimirMapa(respuesta)
         os.system('cls')
-        print self.socketCliente.recv(1024)
+        self.imprimirMapa(self.socketCliente.recv(1024))
         entrada = ''
         terminado = False
         while not terminado:
@@ -54,7 +54,7 @@ class Cliente:
                 os.system('cls')
                 self.socketCliente.send(str(entrada))
                 respuesta = self.socketCliente.recv(1024)
-                print "Respuesta : " + respuesta
+                #print "Respuesta : " + respuesta
                 comando, msg = self.parsearMensajeConsola(respuesta)
                 respuestas = msg.split("/")
 

@@ -42,9 +42,9 @@ class Cliente:
         login = raw_input("Ingrese usuario y contrasena:")
         self.socketCliente.send(login)
         respuesta = self.socketCliente.recv(1024)
-        print respuesta
+        self.imprimirMapa(respuesta)
         os.system('cls')
-        print self.socketCliente.recv(1024)
+        self.imprimirMapa(self.socketCliente.recv(1024))
         entrada = ''
         while entrada !='e':
             entrada = getch()
